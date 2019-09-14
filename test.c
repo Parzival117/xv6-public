@@ -8,6 +8,8 @@
 #include "traps.h"
 #include "memlayout.h"
 
+char buf[512];
+
 void CPUbound() {
   int j = 21, i = 1, k = 0;
   while(i<2000) {
@@ -45,9 +47,11 @@ void PartialIObound() { // Doees the same work as CPUBound, just some additional
 }
 
 void IObound() {
-  int i = 1;
+  int i = 1,n;
   for (; i < 1000; ++i) {
-    sleep(2);
+    sleep(1);
+     int fd = open("proc.c", 0);
+     while((n = read(fd, buf, sizeof(buf))) > 0);
   }
 }
 
