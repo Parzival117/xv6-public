@@ -144,6 +144,10 @@ userinit(void)
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
 
+  // set priority, number of pending slices of init process
+  p->priority = 1;
+  p->pending = 0;
+
   // this assignment to p->state lets other cores
   // run this process. the acquire forces the above
   // writes to be visible, and the lock is also needed
@@ -211,6 +215,11 @@ fork(void)
   np->cwd = idup(curproc->cwd);
 
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
+
+  // Set inital priority of new process equal to parent
+ // Set inital number of pending slices of new process to 0
+  np->priority = myproc()->priority;
+  np->pending = 0;
 
   pid = np->pid;
 
@@ -325,9 +334,11 @@ void
 scheduler(void)
 {
   struct proc *p;
-  struct proc *p1;
+  //------------- struct proc *p1;
   struct cpu *c = mycpu();
   c->proc = 0;
+
+  int incr = 0;
   
   for(;;){
     // Enable interrupts on this processor.
@@ -336,32 +347,61 @@ scheduler(void)
     //struct proc *highP = NULL;
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+
+   // Check if there exist any runnable proccess.
+    // If not, store 0 in `incr`
+    incr = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state == RUNNABLE) {
+        incr = 1;
+        break;
+      }
+    } 
+
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+
+      // Increase pending slices of all sleeping, running and runnable processes,
+      // if incr==1. This is to prevent number of pending slices to increase too much.
+      if((p->state == SLEEPING || p->state == RUNNING || p->state == RUNNABLE) && (incr == 1)) {
+        p->pending += p->priority;
+      }
+
       if(p->state != RUNNABLE)
       	{continue;}
 
-	struct proc *highP = p;
+
+  /*
+	// ------------ struct proc *highP = p;
 
 	//choose process with highest priority
+
+  //-------------------
+  
 	for(p1 = ptable.proc; p1 < &ptable.proc[NPROC];p1++){
 		if(p1->state != RUNNABLE)
 			continue;
 		if(highP->priority < p1->priority)	//higher value has higher priority
 			highP = p1;
 	}
-
+  */
 
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
-      p = highP;
+      // --------------------p = highP;
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
+
+      // Update number of pending cycles if the process didn't yield, but slept
+      // We dont care if the process is a zombie
+      if(c->proc->state == SLEEPING && c->proc->pending>0) {
+        c->proc->pending--;
+      }
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
@@ -403,8 +443,18 @@ void
 yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
-  myproc()->state = RUNNABLE;
-  sched();
+  //--------------myproc()->state = RUNNABLE;
+  //--------------sched();
+
+  // Reduce number of pnding cycles upon yeilding
+  // Yield if pending==0
+  // Also Yield if pending%100 == 0, to prevent a single process from running for too long
+  myproc()->pending--;
+  if(myproc()->pending == 0 || myproc()->pending%100==0) {
+    myproc()->state = RUNNABLE;
+    sched();
+  }
+
   release(&ptable.lock);
 }
 
