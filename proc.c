@@ -597,3 +597,23 @@ chpr(int pid, int priority)
 
 	return pid;
 }
+
+// Set the scheduling-priority of current process to n
+void
+setprio(int n)
+{
+  acquire(&ptable.lock);
+  myproc()->priority = n;
+  release(&ptable.lock);
+}
+
+// Return the scheduling-priority of current process
+int
+getprio(void)
+{
+  int n;
+  acquire(&ptable.lock);
+  n = myproc()->priority;
+  release(&ptable.lock);
+  return n;
+}

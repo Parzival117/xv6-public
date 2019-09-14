@@ -107,3 +107,23 @@ sys_chpr(void)
 
 	return chpr(pid, pr);
 }
+
+int
+sys_setprio(void)
+{
+  int n;
+  if(argint(0,&n) < 0)
+    return -1;
+
+  if(n < 1)
+    return -1;
+
+  setprio(n);
+  return 0;
+}
+
+int
+sys_getprio(void)
+{
+  return getprio();
+}

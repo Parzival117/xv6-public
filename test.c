@@ -9,18 +9,19 @@
 #include "memlayout.h"
 
 void CPUbound() {
-  int j = 53;
-  int i = 1;
-  int k = 0;
-  for (; i < 2000000; ++i) {
+  int j = 21, i = 1, k = 0;
+  while(i<2000) {
     k = 0;
-    for(; k < 1000; k++)
+    while(k < 100000){
       j += k;
-
-    k = 0;
-    for(; k < 1000; k++)
+      k++;
+    }
+	k = 0;
+    while(k < 100000){
       j -= k;
-    if(i%10000==0 && i < 200000);
+      k++;
+    }
+    i++;
   }
   printf(1, "%d\n", j);
 }
@@ -29,15 +30,15 @@ void PartialIObound() { // Doees the same work as CPUBound, just some additional
   int j = 53;
   int i = 1;
   int k = 0;
-  for (; i < 2000000; ++i) {
+  for (; i < 20000; ++i) {
     k = 0;
-    for(; k < 1000; k++)
+    for(; k < 10000; k++)
       j += k;
 
     k = 0;
-    for(; k < 1000; k++)
+    for(; k < 10000; k++)
       j -= k;
-    if(i%10000==0 && i < 200000)
+    if(i%1000==0 && i < 2000)
       sleep(10);
   }
   printf(1, "%d\n", j);
@@ -50,6 +51,7 @@ void IObound() {
   }
 }
 
+//invoking cpuBound process
 void newprocess(int prio) {
   int f = fork();
   if (f < 0) {
@@ -66,6 +68,7 @@ void newprocess(int prio) {
   }
 }
 
+//invoking partial cpu and IOBound process
 void new_partial_ioprocess(int prio) {
   int f = fork();
   if (f < 0) {
@@ -82,6 +85,7 @@ void new_partial_ioprocess(int prio) {
   }
 }
 
+//invoking IOBound process
 void new_ioprocess(int prio) {
   int f = fork();
   if (f < 0) {

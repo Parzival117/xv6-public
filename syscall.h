@@ -22,3 +22,5 @@
 #define SYS_close  21
 #define SYS_cps	   22
 #define SYS_chpr   23
+#define SYS_getprio 24
+#define SYS_setprio 25
